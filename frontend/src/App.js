@@ -20,7 +20,7 @@ const C = {
 const ICONS = { positive: "▲", negative: "▼", neutral: "●" };
 
 /* ─── API Config ─────────────────────────────────────────────────── */
-const API_BASE = process.env.REACT_APP_API_URL || 'https://ml-sentiment-platform.onrender.com';
+const API_BASE = process.env.REACT_APP_API_URL || 'https://sentiment-api-ql9i.onrender.com';
 
 /* ─── Mock Classifier ────────────────────────────────────────────── */
 const POS_WORDS = new Set(["love","great","amazing","fantastic","awesome","excellent","wonderful","happy","best","perfect","beautiful","incredible","brilliant","impressive","outstanding","superb","delightful","phenomenal","thrilled","recommend","enjoy","pleased","glad","fun","good","nice","cool","solid","smooth","fast","clean","helpful","friendly","reliable","quality","favorite","elegant","exciting","valuable","worth","premium","polished","intuitive","responsive","sleek","refined","powerful","efficient","comfortable","generous","charming"]);
