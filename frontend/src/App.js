@@ -19,6 +19,9 @@ const C = {
 
 const ICONS = { positive: "▲", negative: "▼", neutral: "●" };
 
+/* ─── API Config ─────────────────────────────────────────────────── */
+const API_BASE = process.env.REACT_APP_API_URL || 'https://ml-sentiment-platform.onrender.com';
+
 /* ─── Mock Classifier ────────────────────────────────────────────── */
 const POS_WORDS = new Set(["love","great","amazing","fantastic","awesome","excellent","wonderful","happy","best","perfect","beautiful","incredible","brilliant","impressive","outstanding","superb","delightful","phenomenal","thrilled","recommend","enjoy","pleased","glad","fun","good","nice","cool","solid","smooth","fast","clean","helpful","friendly","reliable","quality","favorite","elegant","exciting","valuable","worth","premium","polished","intuitive","responsive","sleek","refined","powerful","efficient","comfortable","generous","charming"]);
 const NEG_WORDS = new Set(["terrible","awful","horrible","worst","hate","bad","poor","disappointing","waste","garbage","useless","broken","scam","regret","disgusting","annoying","frustrating","defective","refund","pathetic","slow","ugly","rude","cheap","fail","crash","bug","error","mess","confusing","overpriced","mediocre","boring","painful","clunky","unreliable","flimsy","dreadful","junk","sucks","laggy","glitchy","unusable","uncomfortable","stiff","dated","tacky","noisy","fragile","bland"]);
@@ -215,21 +218,47 @@ export default function App() {
   const [compareResultB, setCompareResultB] = useState(null);
 
   /* Single prediction */
-  const analyze = useCallback(() => {
+  const analyze = useCallback(async () => {
     if (!text.trim()) return;
-    const r = mockPredict(text);
-    setResult(r);
-    setHistory(prev => [r, ...prev].slice(0, 200));
+    try {
+      const res = await fetch(`${API_BASE}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error('API error');
+      const r = await res.json();
+      setResult(r);
+      setHistory(prev => [r, ...prev].slice(0, 200));
+    } catch {
+      // Fallback to mock if API is unavailable
+      const r = mockPredict(text);
+      setResult(r);
+      setHistory(prev => [r, ...prev].slice(0, 200));
+    }
   }, [text]);
 
   /* Compare */
-  const runCompare = useCallback(() => {
+  const runCompare = useCallback(async () => {
     if (!compareA.trim() || !compareB.trim()) return;
-    const rA = mockPredict(compareA);
-    const rB = mockPredict(compareB);
-    setCompareResultA(rA);
-    setCompareResultB(rB);
-    setHistory(prev => [rB, rA, ...prev].slice(0, 200));
+    try {
+      const res = await fetch(`${API_BASE}/compare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text_a: compareA, text_b: compareB }),
+      });
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      setCompareResultA(data.result_a);
+      setCompareResultB(data.result_b);
+      setHistory(prev => [data.result_b, data.result_a, ...prev].slice(0, 200));
+    } catch {
+      const rA = mockPredict(compareA);
+      const rB = mockPredict(compareB);
+      setCompareResultA(rA);
+      setCompareResultB(rB);
+      setHistory(prev => [rB, rA, ...prev].slice(0, 200));
+    }
   }, [compareA, compareB]);
 
   /* CSV upload */
@@ -239,12 +268,32 @@ export default function App() {
     setCsvProcessing(true);
     Papa.parse(file, {
       header: true, skipEmptyLines: true,
-      complete: (res) => {
+      complete: async (res) => {
         const textCol = Object.keys(res.data[0] || {}).find(k => /text|review|comment|content|message|body/i.test(k));
         if (!textCol) { alert("Could not find a text column. Please ensure your CSV has a column named 'text', 'review', 'comment', 'content', or 'message'."); setCsvProcessing(false); return; }
-        const results = res.data.slice(0, 500).filter(row => row[textCol]?.trim()).map(row => mockPredict(row[textCol]));
-        setCsvResults(results);
-        setHistory(prev => [...results, ...prev].slice(0, 500));
+        const texts = res.data.slice(0, 500).filter(row => row[textCol]?.trim()).map(row => row[textCol]);
+        try {
+          // Process in batches of 50
+          let allResults = [];
+          for (let i = 0; i < texts.length; i += 50) {
+            const batch = texts.slice(i, i + 50);
+            const batchRes = await fetch(`${API_BASE}/predict/batch`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ texts: batch }),
+            });
+            if (!batchRes.ok) throw new Error('API error');
+            const data = await batchRes.json();
+            allResults = [...allResults, ...data.results];
+          }
+          setCsvResults(allResults);
+          setHistory(prev => [...allResults, ...prev].slice(0, 500));
+        } catch {
+          // Fallback to mock
+          const results = texts.map(t => mockPredict(t));
+          setCsvResults(results);
+          setHistory(prev => [...results, ...prev].slice(0, 500));
+        }
         setCsvProcessing(false);
       },
       error: () => { setCsvProcessing(false); alert("Error parsing CSV"); },
