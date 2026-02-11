@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+venv/
+.env
+
+# Model artifacts (regenerate with train.py)
+model/*.pkl
+
+# Node
+frontend/node_modules/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
