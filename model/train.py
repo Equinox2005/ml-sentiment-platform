@@ -260,7 +260,7 @@ def train_model(df: pd.DataFrame, test_size: float = 0.2) -> dict:
     }
 
 
-def save_artifacts(artifacts: dict, output_dir: str = MODEL_DIR) -> None:
+def save_artifacts(artifacts: dict, output_dir: str = MODEL_DIR, dataset: str | None = None) -> None:
     """Serialize model, vectorizer, and metadata to disk."""
     os.makedirs(output_dir, exist_ok=True)
 
@@ -275,6 +275,7 @@ def save_artifacts(artifacts: dict, output_dir: str = MODEL_DIR) -> None:
         "model_type": "LogisticRegression",
         "vectorizer_type": "TfidfVectorizer",
         "label_map": {int(c): LABEL_MAP[int(c)] for c in artifacts["model"].classes_},
+        "dataset": dataset,
         "metrics": artifacts["metrics"],
         "trained_at": datetime.now().isoformat(),
         "sklearn_version": __import__("sklearn").__version__,
@@ -309,7 +310,9 @@ def main():
     print(f"Label distribution:\n{df['label'].value_counts().to_string()}\n")
 
     artifacts = train_model(df)
-    save_artifacts(artifacts, output_dir=args.output)
+    save_artifacts(
+        artifacts, output_dir=args.output, dataset="demo" if args.demo else "Sentiment140"
+    )
 
 
 if __name__ == "__main__":

@@ -109,6 +109,7 @@ class ModelInfoResponse(BaseModel):
     model_type: str
     labels: list[str]
     vocabulary_size: int
+    dataset: str | None = None
     accuracy: float | None = None
     f1_weighted: float | None = None
     train_samples: int | None = None
@@ -254,7 +255,7 @@ async def lifespan(app: FastAPI):
     global MODEL
     MODEL = SentimentModel.load(MODEL_DIR)
     logger.info(
-        "Loaded %s from %s (labels: %s, %d features)",
+        "Loaded %s from %s (labels: %s; %d features)",
         type(MODEL.classifier).__name__,
         os.path.abspath(MODEL_DIR),
         ", ".join(MODEL.labels),
@@ -305,6 +306,7 @@ async def model_info():
         model_type=type(model.classifier).__name__,
         labels=model.labels,
         vocabulary_size=len(model.feature_names),
+        dataset=model.metadata.get("dataset"),
         accuracy=metrics.get("accuracy"),
         f1_weighted=metrics.get("f1_weighted"),
         train_samples=metrics.get("train_samples"),

@@ -11,6 +11,7 @@ def test_model_info_describes_shipped_model(client):
     body = client.get("/model").json()
     assert body["labels"] == ["negative", "positive"]
     assert body["vocabulary_size"] == 50000
+    assert body["dataset"] == "Sentiment140"
     assert body["accuracy"] == pytest.approx(0.818, abs=0.001)
 
 

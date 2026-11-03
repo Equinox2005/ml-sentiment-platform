@@ -6,6 +6,7 @@
     "1": "positive",
     "2": "neutral"
   },
+  "dataset": "Sentiment140",
   "metrics": {
     "accuracy": 0.817865625,
     "f1_weighted": 0.8178412060711109,
