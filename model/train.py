@@ -4,13 +4,13 @@ Sentiment Analysis Model Training Pipeline
 Trains a text sentiment classifier using scikit-learn.
 
 Usage:
-    # Full training with Sentiment140 dataset:
-    python train.py --data path/to/sentiment140.csv
+    # Full training with the Sentiment140 dataset:
+    python model/train.py --data path/to/training.1600000.processed.noemoticon.csv
 
-    # Demo training with embedded sample data:
-    python train.py --demo
+    # Quick run on the 100 example sentences below (overwrites the shipped model):
+    python model/train.py --demo
 
-The trained model and vectorizer are serialized to:
+The trained model and vectorizer are written next to this script unless --output is given:
     - model/sentiment_model.pkl
     - model/tfidf_vectorizer.pkl
     - model/metadata.json
@@ -37,7 +37,8 @@ from sklearn.metrics import (
     recall_score,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
+
+MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEMO_DATA = {
     "text": [
@@ -177,6 +178,7 @@ def load_sentiment140(filepath: str) -> pd.DataFrame:
     df["label"] = df["target"].map(label_remap)
     df["text"] = df["text"].apply(clean_text)
     df = df[["text", "label"]].dropna()
+    df = df[df["text"] != ""]
 
     return df
 
@@ -213,7 +215,6 @@ def train_model(df: pd.DataFrame, test_size: float = 0.2) -> dict:
         max_iter=1000,
         solver="lbfgs",
         random_state=42,
-        n_jobs=-1,
     )
 
     print("Training model...")
@@ -223,17 +224,18 @@ def train_model(df: pd.DataFrame, test_size: float = 0.2) -> dict:
     print(f"Training completed in {train_time:.2f}s")
 
     y_pred = model.predict(X_test_tfidf)
-    y_proba = model.predict_proba(X_test_tfidf)
 
     target_names = [LABEL_MAP[i] for i in sorted(LABEL_MAP.keys()) if i in np.unique(y)]
 
     metrics = {
         "accuracy": float(accuracy_score(y_test, y_pred)),
-        "f1_weighted": float(f1_score(y_test, y_pred, average="weighted")),
-        "precision_weighted": float(precision_score(y_test, y_pred, average="weighted")),
-        "recall_weighted": float(recall_score(y_test, y_pred, average="weighted")),
+        "f1_weighted": float(f1_score(y_test, y_pred, average="weighted", zero_division=0)),
+        "precision_weighted": float(
+            precision_score(y_test, y_pred, average="weighted", zero_division=0)
+        ),
+        "recall_weighted": float(recall_score(y_test, y_pred, average="weighted", zero_division=0)),
         "classification_report": classification_report(
-            y_test, y_pred, target_names=target_names, output_dict=True
+            y_test, y_pred, target_names=target_names, output_dict=True, zero_division=0
         ),
         "confusion_matrix": confusion_matrix(y_test, y_pred).tolist(),
         "training_time_seconds": round(train_time, 2),
@@ -242,14 +244,14 @@ def train_model(df: pd.DataFrame, test_size: float = 0.2) -> dict:
     }
 
     print(f"\n{'='*50}")
-    print(f"  Model Evaluation Results")
+    print("  Model Evaluation Results")
     print(f"{'='*50}")
     print(f"  Accuracy:  {metrics['accuracy']:.4f}")
     print(f"  F1 Score:  {metrics['f1_weighted']:.4f}")
     print(f"  Precision: {metrics['precision_weighted']:.4f}")
     print(f"  Recall:    {metrics['recall_weighted']:.4f}")
     print(f"{'='*50}\n")
-    print(classification_report(y_test, y_pred, target_names=target_names))
+    print(classification_report(y_test, y_pred, target_names=target_names, zero_division=0))
 
     return {
         "model": model,
@@ -258,7 +260,7 @@ def train_model(df: pd.DataFrame, test_size: float = 0.2) -> dict:
     }
 
 
-def save_artifacts(artifacts: dict, output_dir: str = ".") -> None:
+def save_artifacts(artifacts: dict, output_dir: str = MODEL_DIR) -> None:
     """Serialize model, vectorizer, and metadata to disk."""
     os.makedirs(output_dir, exist_ok=True)
 
@@ -272,7 +274,7 @@ def save_artifacts(artifacts: dict, output_dir: str = ".") -> None:
     metadata = {
         "model_type": "LogisticRegression",
         "vectorizer_type": "TfidfVectorizer",
-        "label_map": LABEL_MAP,
+        "label_map": {int(c): LABEL_MAP[int(c)] for c in artifacts["model"].classes_},
         "metrics": artifacts["metrics"],
         "trained_at": datetime.now().isoformat(),
         "sklearn_version": __import__("sklearn").__version__,
@@ -288,20 +290,20 @@ def save_artifacts(artifacts: dict, output_dir: str = ".") -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Train sentiment analysis model")
-    parser.add_argument("--data", type=str, help="Path to Sentiment140 CSV")
-    parser.add_argument("--demo", action="store_true", help="Use embedded demo data")
-    parser.add_argument("--output", type=str, default=".", help="Output directory")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--data", type=str, help="Path to Sentiment140 CSV")
+    source.add_argument("--demo", action="store_true", help="Use embedded demo data")
+    parser.add_argument(
+        "--output", type=str, default=MODEL_DIR, help="Output directory (default: model/)"
+    )
     args = parser.parse_args()
 
     if args.demo:
         print("Loading demo dataset...")
         df = load_demo_data()
-    elif args.data:
+    else:
         print(f"Loading Sentiment140 from {args.data}...")
         df = load_sentiment140(args.data)
-    else:
-        print("No data source specified. Use --demo or --data <path>")
-        return
 
     print(f"Dataset: {len(df)} samples")
     print(f"Label distribution:\n{df['label'].value_counts().to_string()}\n")
