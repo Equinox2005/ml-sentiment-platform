@@ -153,5 +153,9 @@ function ModelFooter({ info }) {
   if (info.accuracy != null && info.test_samples) {
     parts.push(`${percent(info.accuracy)} accuracy on ${count(info.test_samples)} held-out ${examples}`);
   }
-  return <footer className="container footer">{parts.join(" · ")}</footer>;
+  return (
+    <footer className="container footer">
+      <p>{parts.join(" · ")}</p>
+    </footer>
+  );
 }

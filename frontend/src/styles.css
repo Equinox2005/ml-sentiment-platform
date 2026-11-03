@@ -660,11 +660,20 @@ code {
 
 .footer {
   margin-top: 72px;
-  padding-top: 24px;
   padding-bottom: 40px;
+}
+
+.footer p {
+  padding-top: 24px;
   border-top: 1px solid var(--border);
   color: var(--text-faint);
   font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-fill {
+    transition: none;
+  }
 }
 
 @media (max-width: 800px) {
