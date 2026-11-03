@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { compare } from "../api";
 import { SUBMIT_SHORTCUT } from "../lib/format";
 import Result from "./Result";
@@ -35,20 +35,23 @@ export default function Compare({ onResults }) {
   const [comparison, setComparison] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const latestRequest = useRef(0);
   const ready = textA.trim() && textB.trim();
 
   async function run(a = textA, b = textB) {
-    if (!a.trim() || !b.trim() || loading) return;
+    if (!a.trim() || !b.trim()) return;
+    const request = ++latestRequest.current;
     setLoading(true);
     setError(null);
     try {
       const data = await compare(a, b);
+      if (request !== latestRequest.current) return;
       setComparison(data);
       onResults([data.result_a, data.result_b]);
     } catch (err) {
-      setError(err.message);
+      if (request === latestRequest.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (request === latestRequest.current) setLoading(false);
     }
   }
 

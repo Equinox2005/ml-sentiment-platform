@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { predict } from "../api";
 import { SUBMIT_SHORTCUT } from "../lib/format";
 import Result from "./Result";
@@ -36,19 +36,23 @@ export default function SingleText({ onResults }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const latestRequest = useRef(0);
 
   async function analyze(value = text) {
-    if (!value.trim() || loading) return;
+    if (!value.trim()) return;
+    // Only the most recent request updates the page, e.g. after clicking two examples quickly
+    const request = ++latestRequest.current;
     setLoading(true);
     setError(null);
     try {
       const r = await predict(value);
+      if (request !== latestRequest.current) return;
       setResult(r);
       onResults([r]);
     } catch (err) {
-      setError(err.message);
+      if (request === latestRequest.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (request === latestRequest.current) setLoading(false);
     }
   }
 
