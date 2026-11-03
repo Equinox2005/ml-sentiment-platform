@@ -20,7 +20,8 @@ const C = {
 const ICONS = { positive: "▲", negative: "▼", neutral: "●" };
 
 /* ─── API Config ─────────────────────────────────────────────────── */
-const API_BASE = process.env.REACT_APP_API_URL || 'https://sentiment-api-ql9i.onrender.com';
+// Dev server and Docker proxy /api to the backend; production builds default to the hosted API
+const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "/api" : "https://sentiment-api-ql9i.onrender.com");
 
 /* ─── Mock Classifier ────────────────────────────────────────────── */
 const POS_WORDS = new Set(["love","great","amazing","fantastic","awesome","excellent","wonderful","happy","best","perfect","beautiful","incredible","brilliant","impressive","outstanding","superb","delightful","phenomenal","thrilled","recommend","enjoy","pleased","glad","fun","good","nice","cool","solid","smooth","fast","clean","helpful","friendly","reliable","quality","favorite","elegant","exciting","valuable","worth","premium","polished","intuitive","responsive","sleek","refined","powerful","efficient","comfortable","generous","charming"]);
