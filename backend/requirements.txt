@@ -1,6 +1,7 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.0
-scikit-learn==1.5.1
-joblib==1.4.2
-numpy==1.26.4
-pydantic==2.9.0
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+# Keep in step with the version that trained model/*.pkl (see model/metadata.json)
+scikit-learn==1.8.0
+joblib==1.6.0
+numpy==2.4.6
+pydantic==2.14.2
