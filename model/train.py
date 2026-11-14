@@ -1,6 +1,6 @@
 """
 Sentiment Analysis Model Training Pipeline
-============================================
+
 Trains a text sentiment classifier using scikit-learn.
 
 Usage:
@@ -150,7 +150,6 @@ DEMO_DATA = {
 }
 
 LABEL_MAP = {0: "negative", 1: "positive", 2: "neutral"}
-REVERSE_LABEL_MAP = {"negative": 0, "positive": 1, "neutral": 2}
 
 
 def clean_text(text: str) -> str:

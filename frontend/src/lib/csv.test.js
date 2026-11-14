@@ -13,6 +13,23 @@ describe("findTextColumn", () => {
   it("skips id columns", () => {
     expect(findTextColumn(["review_id", "stars"])).toBeNull();
   });
+
+  it("prefers a header that ends with a known name", () => {
+    expect(findTextColumn(["reviewer", "rating", "review_text"])).toBe("review_text");
+    expect(findTextColumn(["review_id", "reviewer_name", "review_date", "review_body"])).toBe("review_body");
+    expect(findTextColumn(["message_type", "message_text"])).toBe("message_text");
+    expect(findTextColumn(["comment_count", "comments"])).toBe("comments");
+    expect(findTextColumn(["reviewerID", "reviewerName", "reviewText", "overall"])).toBe("reviewText");
+  });
+
+  it("does not take a count column for a plural name", () => {
+    expect(findTextColumn(["body_clean", "score", "num_comments"])).toBe("body_clean");
+    expect(findTextColumn(["review_headline", "star_rating", "total_reviews"])).toBe("review_headline");
+  });
+
+  it("still accepts a header that only contains a known name", () => {
+    expect(findTextColumn(["stars", "review_headline"])).toBe("review_headline");
+  });
 });
 
 describe("resultsToCsv", () => {

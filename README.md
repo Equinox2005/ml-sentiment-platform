@@ -8,9 +8,9 @@ Live demo: [sentiment-dashboard-nr3s.onrender.com](https://sentiment-dashboard-n
 
 ## How it works
 
-1. **Cleaning.** Text is lowercased, and links, @mentions, #hashtags, numbers and punctuation are stripped. The same `clean_text` runs in training and in the API, and a test checks that the two copies match.
-2. **Features.** A TF-IDF vectorizer scores the text against a vocabulary of 50,000 words and two-word phrases.
-3. **Classifier.** Logistic regression turns those scores into a probability of positive vs. negative.
+1. Text is lowercased, and links, @mentions, #hashtags, numbers and punctuation are stripped. The same `clean_text` runs in training and in the API, and a test checks that the two copies match.
+2. A TF-IDF vectorizer scores the text against a vocabulary of 50,000 words and two-word phrases.
+3. Logistic regression turns those scores into a probability of positive vs. negative.
 
 Each key word's score is its TF-IDF value times the model's coefficient for that term. In other words, it is how far that term moved the log-odds. Two-word phrases matter. In "Not bad at all, I would buy it again", the word `bad` pushes toward negative (−1.24), but the phrase `not bad` pushes harder toward positive (+3.24). The result is 88% positive.
 
@@ -23,15 +23,15 @@ Trained on 1,280,000 tweets and tested on the other 320,000 (a stratified 80/20 
 | Negative | 0.825     | 0.806  | 0.816 |
 | Positive | 0.811     | 0.829  | 0.820 |
 
-Overall accuracy is 81.8%. The confusion matrix and the rest of the metrics are in [`model/metadata.json`](model/metadata.json). A prediction takes under a millisecond.
+Overall accuracy is 81.8%. The confusion matrix and the rest of the metrics are in [`model/metadata.json`](model/metadata.json). A prediction takes about a millisecond.
 
 ## Limits
 
-- **Two classes only.** Sentiment140's training set has no neutral tweets, so neutral text still gets a confident guess. For example, "The product is okay. It does what it says but nothing special." comes out 83% negative.
-- **Bag of words.** Apart from two-word phrases, word order is ignored. Sarcasm and negation that isn't right next to the word ("not at all what I'd call good") get missed.
-- **Noisy, dated labels.** The tweets are from 2009 and were labeled automatically by their emoticons, not by people. Topic words pick up sentiment along the way: `battery` leans negative because tweets about batteries are mostly complaints.
-- **English letters only.** Emoji, numbers and non-Latin scripts are removed during cleaning. Text made only of those can't be scored, and the API returns 400.
-- **Not production hardened.** There's no auth or rate limiting. `/stats` keeps only in-memory counts.
+- There are only two classes. Sentiment140's training set has no neutral tweets, so neutral text still gets a confident guess. For example, "The product is okay. It does what it says but nothing special." comes out 83% negative.
+- Apart from two-word phrases, word order is ignored. Sarcasm and negation that isn't right next to the word ("not at all what I'd call good") get missed.
+- The tweets are from 2009 and were labeled automatically by their emoticons, not by people. Topic words pick up sentiment along the way: `battery` leans negative because tweets about batteries are mostly complaints.
+- Emoji, numbers and non-Latin scripts are removed during cleaning. Text made only of those, or with no words the model has seen, can't be scored, and the API returns 400.
+- It isn't hardened for production. There's no auth or rate limiting, and `/stats` keeps only in-memory counts.
 
 ## Running it
 
@@ -70,8 +70,8 @@ Open http://localhost:3000. The dev server forwards `/api` to the backend on por
 ### Tests
 
 ```bash
-cd backend && pip install -r requirements-dev.txt && pytest
-cd frontend && npm test
+(cd backend && pip install -r requirements-dev.txt && pytest)
+(cd frontend && npm test)
 ```
 
 GitHub Actions runs both suites, builds the frontend, and starts the Docker setup to check that the app can reach the API through nginx.

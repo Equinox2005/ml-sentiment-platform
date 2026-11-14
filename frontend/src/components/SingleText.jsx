@@ -50,7 +50,10 @@ export default function SingleText({ onResults }) {
       setResult(r);
       onResults([r]);
     } catch (err) {
-      if (request === latestRequest.current) setError(err.message);
+      if (request === latestRequest.current) {
+        setError(err.message);
+        setResult(null);
+      }
     } finally {
       if (request === latestRequest.current) setLoading(false);
     }

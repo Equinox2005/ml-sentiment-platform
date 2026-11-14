@@ -153,6 +153,7 @@ function ModelFooter({ info }) {
   if (info.accuracy != null && info.test_samples) {
     parts.push(`${percent(info.accuracy)} accuracy on ${count(info.test_samples)} held-out ${examples}`);
   }
+  if (!info.labels.includes("neutral")) parts.push("no neutral class");
   return (
     <footer className="container footer">
       <p>{parts.join(" · ")}</p>

@@ -26,7 +26,10 @@ export default function CsvUpload({ onResults }) {
 
       const texts = data.map((row) => (row[column] ?? "").trim()).filter(Boolean);
       if (texts.length === 0) throw new Error(`The "${column}" column is empty.`);
-      const rows = texts.slice(0, MAX_ROWS).map((text) => text.slice(0, MAX_TEXT_LENGTH));
+      // slice() counts UTF-16 units and can leave half an emoji at the cut, which the API rejects
+      const rows = texts
+        .slice(0, MAX_ROWS)
+        .map((text) => text.slice(0, MAX_TEXT_LENGTH).replace(/[\uD800-\uDBFF]$/, ""));
 
       const results = [];
       let skipped = 0;
@@ -141,7 +144,7 @@ function rows(count) {
 function BatchResults({ job, onDownload }) {
   const notes = [];
   if (job.skipped) {
-    notes.push(`Skipped ${rows(job.skipped)} with nothing left to analyze after removing links, numbers and symbols.`);
+    notes.push(`Skipped ${rows(job.skipped)} with no words the model knows left after removing links, numbers and symbols.`);
   }
   if (job.notAnalyzed) {
     notes.push(`Only the first ${MAX_ROWS} rows were analyzed; ${rows(job.notAnalyzed)} left out.`);
@@ -151,9 +154,11 @@ function BatchResults({ job, onDownload }) {
     <div aria-live="polite">
       <div className="batch-head">
         <h2 className="section-title">{job.file}</h2>
-        <button type="button" className="button button-small" onClick={onDownload}>
-          Download results
-        </button>
+        {job.results.length > 0 && (
+          <button type="button" className="button button-small" onClick={onDownload}>
+            Download results
+          </button>
+        )}
       </div>
       {job.results.length > 0 && <Summary results={job.results} totalLabel="Rows" />}
       {notes.length > 0 && <p className="hint batch-notes">{notes.join(" ")}</p>}

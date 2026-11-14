@@ -49,7 +49,10 @@ export default function Compare({ onResults }) {
       setComparison(data);
       onResults([data.result_a, data.result_b]);
     } catch (err) {
-      if (request === latestRequest.current) setError(err.message);
+      if (request === latestRequest.current) {
+        setError(err.message);
+        setComparison(null);
+      }
     } finally {
       if (request === latestRequest.current) setLoading(false);
     }

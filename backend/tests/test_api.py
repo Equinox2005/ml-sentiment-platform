@@ -38,11 +38,13 @@ def test_key_words_explain_the_prediction(client):
     assert words["good"] == "positive"
 
 
-@pytest.mark.parametrize("text", ["   ", "!!! 123", "@someone #tag https://example.com"])
+@pytest.mark.parametrize(
+    "text", ["   ", "!!! 123", "@someone #tag https://example.com", "zzzzqqqq", "I"]
+)
 def test_predict_rejects_text_with_nothing_to_analyze(client, text):
     res = client.post("/predict", json={"text": text})
     assert res.status_code == 400
-    assert "Nothing left to analyze" in res.json()["detail"]
+    assert "No words the model knows" in res.json()["detail"]
 
 
 @pytest.mark.parametrize("text", ["", "a" * 5001])

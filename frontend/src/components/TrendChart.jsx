@@ -10,7 +10,7 @@ import {
 } from "recharts";
 
 const MAX_POINTS = 50;
-const COLORS = { line: "#a78bfa", grid: "#26262b", axis: "#75757e" };
+const COLORS = { line: "#a78bfa", grid: "#26262b", axis: "#80808a" };
 
 export default function TrendChart({ history }) {
   const recent = history.slice(0, MAX_POINTS).reverse();

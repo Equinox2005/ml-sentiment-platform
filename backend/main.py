@@ -1,6 +1,6 @@
 """
 Sentiment Analysis API
-=======================
+
 FastAPI backend serving the trained sentiment model from model/.
 
 Run from the backend/ directory:
@@ -27,7 +27,6 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger("uvicorn.error")
 
-# ── Config ───────────────────────────────────────────────────────────
 MODEL_DIR = os.getenv(
     "MODEL_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "model")
 )
@@ -41,11 +40,10 @@ KEY_WORD_LIMIT = 8
 LABEL_NAMES = {0: "negative", 1: "positive", 2: "neutral"}
 
 EMPTY_TEXT_DETAIL = (
-    "Nothing left to analyze after removing links, mentions, hashtags, numbers and symbols."
+    "No words the model knows are left after removing links, mentions, hashtags, numbers and symbols."
 )
 
 
-# ── Schemas ──────────────────────────────────────────────────────────
 class PredictRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=MAX_TEXT_LENGTH, examples=["I love this product!"])
 
@@ -76,7 +74,7 @@ class BatchPredictRequest(BaseModel):
 class BatchPredictResponse(BaseModel):
     results: list[PredictResponse]
     skipped: list[int] = Field(
-        default=[], description="Indexes of texts with nothing left to analyze after cleaning"
+        default=[], description="Indexes of texts with no words the model knows left after cleaning"
     )
     total_inference_time_ms: float
 
@@ -117,7 +115,6 @@ class ModelInfoResponse(BaseModel):
     trained_at: str | None = None
 
 
-# ── Text Preprocessing ───────────────────────────────────────────────
 def clean_text(text: str) -> str:
     """Mirror the preprocessing used during training."""
     text = text.lower()
@@ -129,7 +126,6 @@ def clean_text(text: str) -> str:
     return text
 
 
-# ── Model ────────────────────────────────────────────────────────────
 def polarity_weights(classifier: Any, labels: list[str]) -> np.ndarray | None:
     """Per-feature weight toward positive (> 0) or negative (< 0), if the model is linear."""
     coef = getattr(classifier, "coef_", None)
@@ -217,7 +213,6 @@ STATS = Stats()
 STARTED_AT = time.monotonic()
 
 
-# ── Prediction Logic ─────────────────────────────────────────────────
 def require_model() -> SentimentModel:
     if MODEL is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
@@ -225,13 +220,15 @@ def require_model() -> SentimentModel:
 
 
 def analyze(model: SentimentModel, text: str) -> PredictResponse | None:
-    """Run inference on one text. Returns None if nothing is left after cleaning."""
+    """Run inference on one text. Returns None if cleaning leaves no words the model knows."""
     cleaned = clean_text(text)
     if not cleaned:
         return None
 
     start = time.perf_counter()
     features = model.vectorizer.transform([cleaned])
+    if features.nnz == 0:
+        return None
     proba = model.classifier.predict_proba(features)[0]
     elapsed_ms = (time.perf_counter() - start) * 1000
 
@@ -248,7 +245,6 @@ def analyze(model: SentimentModel, text: str) -> PredictResponse | None:
     )
 
 
-# ── App ──────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load model artifacts on startup."""
@@ -280,7 +276,6 @@ app.add_middleware(
 )
 
 
-# ── Routes ───────────────────────────────────────────────────────────
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse("/docs")

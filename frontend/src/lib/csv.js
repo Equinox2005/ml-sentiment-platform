@@ -2,16 +2,22 @@ import Papa from "papaparse";
 
 export const TEXT_COLUMNS = ["text", "review", "comment", "content", "message", "body"];
 
-/** Pick the column to analyze: an exact name first, then a header that contains one (but not an id). */
+/**
+ * Pick the column to analyze: an exact name first, then a header that ends with one
+ * or is its plural, then one that only contains one (but not an id).
+ */
 export function findTextColumn(fields) {
   const names = fields.map((field) => field.trim().toLowerCase());
   for (const wanted of TEXT_COLUMNS) {
     const i = names.indexOf(wanted);
     if (i !== -1) return fields[i];
   }
-  const i = names.findIndex(
-    (name) => TEXT_COLUMNS.some((wanted) => name.includes(wanted)) && !/(^|[\s_-])id$/.test(name)
-  );
+  const endsWithName = (name) =>
+    TEXT_COLUMNS.some((wanted) => name.endsWith(wanted) || name === `${wanted}s`);
+  const containsName = (name) =>
+    TEXT_COLUMNS.some((wanted) => name.includes(wanted)) && !/(^|[\s_-])id$/.test(name);
+  let i = names.findIndex(endsWithName);
+  if (i === -1) i = names.findIndex(containsName);
   return i === -1 ? null : fields[i];
 }
 

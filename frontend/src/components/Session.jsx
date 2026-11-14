@@ -8,9 +8,12 @@ const TrendChart = lazy(() => import("./TrendChart"));
 
 const LIST_LIMIT = 100;
 const CLOUD_LIMIT = 30;
+// Past each prediction's strongest few, the key words are mostly "and", "the", "was"
+const CLOUD_WORDS_PER_PREDICTION = 3;
 
 export default function Session({ history, onClear }) {
-  const date = new Date().toISOString().slice(0, 10);
+  // en-CA writes the local date as YYYY-MM-DD; toISOString() would give the UTC date
+  const date = new Date().toLocaleDateString("en-CA");
 
   function exportCsv() {
     downloadFile(`sentiment-history-${date}.csv`, resultsToCsv(history, labelsOf(history)), "text/csv");
@@ -80,7 +83,7 @@ function WordCloud({ history }) {
   const words = useMemo(() => {
     const byWord = new Map();
     for (const h of history) {
-      for (const kw of h.key_words) {
+      for (const kw of h.key_words.slice(0, CLOUD_WORDS_PER_PREDICTION)) {
         const entry = byWord.get(kw.word) ?? { word: kw.word, count: 0, positive: 0 };
         entry.count += 1;
         if (kw.type === "positive") entry.positive += 1;
